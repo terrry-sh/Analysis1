@@ -11,6 +11,7 @@ example (h: p -> q) (nq : ¬q) : ¬p :=
 -- But (not q -> not p) -> (p -> q) is classical
 
 
+
 #check Trans
 #check And.intro
 
@@ -65,6 +66,8 @@ instance : Add NN where
   add := leftAdd
 
 def leftAddZero (m : NN) : zero + m = m := by rfl;
+def leftAddZero1 (m : NN) : m = zero + m := by
+  exact Eq.symm (leftAddZero m);
 def leftAddSucc (n m : NN) : succ n + m = succ (n +m) := by rfl;
 
 theorem leftAddFromRightByZero (n : NN) : n + NN.zero = n := by 
@@ -178,6 +181,80 @@ theorem addToZeroImpliesZero (a b: NN) : a + b = zero -> a = zero ∧ b = zero :
   rw [leftAddCommutative] at p;
   exact sumEqualsZeroImpliesZero b a p;
   exact sumEqualsZeroImpliesZero a b p;
+
+
+theorem reflProducer (t: Sort u) (a: t) : a = a := by
+  rfl;
+
+#check Exists.intro
+
+example (p q : Nat → Prop) : (∃ x, p x) → ∃ x, p x ∨ q x := by
+  intro h
+  cases h with
+  | intro x px => exists x; apply Or.inl; exact px
+
+theorem positiveImpliesExistenceSuccInverse (a b: NN) : isPositive b -> ∃a, succ a = b := by
+  intro h;
+  cases b with 
+  | zero => exact False.elim (h rfl);
+  | succ c => 
+  exact Exists.intro c (reflProducer NN (succ c));
+
+def isGTEQThan (m n: NN) : Prop := 
+  ∃a:NN,  m = a + n
+
+def isGTThan (m n: NN) : Prop := 
+  (isGTEQThan m n) ∧ (m ≠ n)
+
+
+theorem reflexivityOfGTEQ (a : NN) : isGTEQThan a a := by
+  exact Exists.intro zero (leftAddZero1 a);
+
+#check leftAddAssociative
+
+theorem transitiveOfGTEQ (a b c: NN) 
+  (p : isGTEQThan a b) (q : isGTEQThan b c) : isGTEQThan a c := by
+  cases p with 
+  | intro x1 p => 
+  cases q with
+  | intro x2 q => 
+  rw [q] at p;
+  rw [←(leftAddAssociative x1 x2 c)] at p;
+  exact Exists.intro (x1 + x2) (p);
+
+#check leftAddZero
+#check leftAddCancellation
+
+#check leftAddCommutative
+#check addToZeroImpliesZero
+
+theorem leftAddCancellation1 (a b c: NN) (h : b + a = c + a) : b = c := by
+   rw [leftAddCommutative, leftAddCommutative c a] at h;
+   exact leftAddCancellation a b c h;
+
+
+theorem antisymmetryOfGTEQ (a b: NN) 
+  (p : isGTEQThan a b) (q : isGTEQThan b a) : a = b := by
+  cases p with 
+  | intro x1 p => 
+  cases q with
+  | intro x2 q => 
+  have h1 := leftAddZero a;
+  rw [←h1] at p;
+  rw [q] at p;
+  rw [←(leftAddAssociative x1 x2 a)] at p;
+  have h2 := Eq.symm (leftAddCancellation1 a zero (x1 + x2) p);
+  have h3 := addToZeroImpliesZero x1 x2 h2;
+  have h4 := h3.right;
+  rw [h4] at q;
+  have h5 := leftAddZero a;
+  rw [h5] at q;
+  exact Eq.symm q;
+
+
+
+
+
 
    
   
