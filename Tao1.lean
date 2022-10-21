@@ -204,7 +204,8 @@ def isGTEQThan (m n: NN) : Prop :=
   ∃a:NN,  m = a + n
 
 def isGTThan (m n: NN) : Prop := 
-  (isGTEQThan m n) ∧ (m ≠ n)
+  -- (isGTEQThan m n) ∧ (m ≠ n)
+  ∃a:NN,  (m = a + n) ∧ (isPositive a)
 
 
 theorem reflexivityOfGTEQ (a : NN) : isGTEQThan a a := by
@@ -250,6 +251,148 @@ theorem antisymmetryOfGTEQ (a b: NN)
   have h5 := leftAddZero a;
   rw [h5] at q;
   exact Eq.symm q;
+
+theorem addConstantToBothSides (a b c: NN) (p : a = b) : c + a = c + b := by
+  rw [p];
+
+
+#check leftAddAssociative
+
+theorem additionPreservesGTEQ (a b c :NN) (p : isGTEQThan a b): isGTEQThan (c + a) (c + b) := by
+  cases p with 
+  | intro x1 p => 
+  have h : c + a = x1 + (c + b) := by
+    have h1 := (addConstantToBothSides a (x1 + b) c) p;
+    rw [leftAddCommutative x1 b, ←leftAddAssociative c b x1, (leftAddCommutative (c + b) x1)] at h1;
+    exact h1;
+  exact Exists.intro x1 h;
+
+theorem additionPreservesGTEQ1 (a b c :NN) (p : isGTEQThan (c + a) (c + b)): isGTEQThan a b := by
+  cases p with
+  | intro x1 p => 
+  have h1 : a = x1 + b := by sorry;
+  exact Exists.intro x1 h1;
+
+theorem notEqualImpliesGT (m n: NN) (p : isGTThan m n) : (isGTEQThan m n) ∧ (m ≠ n) := by 
+  -- same witness
+  sorry
+
+
+
+
+theorem succGTEQImpliesGT (a b :NN) (p: isGTEQThan b (succ a)) : isGTThan b a := by
+  -- same witness
+  sorry
+
+
+
+
+theorem trichotomy (a b : NN) : ∃ c, (a = c + b) ∨ (b = c + a) := by
+  induction a with
+  | zero =>
+  have h: b = b + zero := by
+    have h1 := leftAddZero1 b;
+    rw [leftAddCommutative] at h1;
+    exact h1; 
+  exact Exists.intro (b) (Or.inr h);
+  | succ a h =>
+  cases h with
+  | intro x1 p =>
+  cases p with
+  | inl h1 =>
+  have q : (succ a) = (succ x1) + b := by sorry;
+  exact Exists.intro (succ x1) (Or.inl  q);
+  | inr h1 =>
+  cases x1 with 
+  | zero =>
+  have hhh: succ a = (succ zero) + b := by sorry;
+  exact Exists.intro (succ zero) (Or.inl hhh);
+  | succ x1 =>
+  have h2 : b = x1 + succ a := by sorry;
+  exact Exists.intro (x1) (Or.inr h2);
+
+
+theorem GTEQTrichotomy (a b : NN) : (isGTThan a b) ∨ a = b ∨ (isGTThan b a) := by sorry
+
+
+theorem nothingLessThanZero (m : NN) (p:isGTThan zero m) : False := by sorry
+
+theorem zeroGTEQThanZero (a : NN) (p: isGTEQThan zero a) : a = zero := by sorry
+
+#check nothingLessThanZero
+#check False.elim
+
+theorem gtImpliesGTEQSucc {a b :NN} (p: isGTThan (succ b) a) : isGTEQThan b a := by
+  -- same witness
+  sorry
+
+
+
+theorem GTEQImpliesGTOrEqual {m n: NN} (p: isGTEQThan m n) : (isGTThan m n) ∨ (m = n) := by
+  sorry
+
+
+--
+-- THIS WAS A FUCKING DISASTER NGL
+--  
+theorem strongInductionNNBaseZeroPart1 (P : NN -> Prop)
+  (q : ∀m : NN, (∀ m': NN, (isGTThan m m') -> (P m')) -> P m)
+  : ∀m : NN, (∀ m' : NN, (isGTEQThan m m') -> (P m')) := by
+  intro m;
+  induction m with
+  | zero => 
+  intro m1;
+  intro h0;
+  have h1 : m1 = zero := zeroGTEQThanZero m1 h0;
+  have p := q zero;
+  --rw [nothingLessThanZero m'] at p;
+  have f : (∀ (m' : NN), isGTThan zero m' → P m') := (fun m: NN => 
+  (fun p: isGTThan zero m => (False.elim (nothingLessThanZero m p))));
+  rw [h1];
+  exact p f;
+  | succ m2 h1 =>
+  have h2 : ∀ (m' : NN), isGTThan (succ m2) m' → P m' := by
+    exact (fun m' => (fun x => (h1 m') (gtImpliesGTEQSucc x)));
+  --have h3 := q m1;
+  intro m1;
+  intro h6;
+  have h3 := (q (succ m2));
+  have h5 := h3 h2;
+  --have h5 := 
+  have h7 : isGTThan (succ m2) m1 ∨ (succ m2 = m1) := by 
+    exact GTEQImpliesGTOrEqual h6;
+  cases h7 with
+  | inl h8 => exact ((h2 m1) h8);
+  | inr h9 => 
+    rw [← h9];
+    exact h5;
+
+
+
+
+-- In the future lets make this 
+-- into a semigroup 
+-- and then we can just assert that a diferent base 
+-- will be a new semigroup
+theorem strongInductionNNBaseZero (P : NN -> Prop)
+  (q : ∀m : NN, (∀ m': NN, (isGTThan m m') -> (P m')) -> P m)
+  : ∀m : NN, P m := by 
+  intro m;
+  -- we need to induct with the extra criteria that 
+  -- (∀ m': NN, (isGTThan m m') -> (P m'))
+
+
+
+  intro m1;
+  induction m1 with
+  | zero => 
+  have p := q zero;
+  --rw [nothingLessThanZero m'] at p;
+  have f : (∀ (m' : NN), isGTThan zero m' → P m') := (fun m: NN => 
+  (fun p: isGTThan zero m => (False.elim (nothingLessThanZero m p))));
+  exact p f;
+  | succ m1 h1 =>
+
 
 
 
