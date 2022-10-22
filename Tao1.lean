@@ -367,38 +367,127 @@ theorem strongInductionNNBaseZeroPart1 (P : NN -> Prop)
     rw [← h9];
     exact h5;
 
+-- -- In the future lets make this 
+-- -- into a semigroup 
+-- -- and then we can just assert that a diferent base 
+-- -- will be a new semigroup
+-- theorem strongInductionNNBaseZero (P : NN -> Prop)
+--   (q : ∀m : NN, (∀ m': NN, (isGTThan m m') -> (P m')) -> P m)
+--   : ∀m : NN, P m := by 
+--   intro m;
+--   -- we need to induct with the extra criteria that 
+--   -- (∀ m': NN, (isGTThan m m') -> (P m'))
 
 
 
--- In the future lets make this 
--- into a semigroup 
--- and then we can just assert that a diferent base 
--- will be a new semigroup
-theorem strongInductionNNBaseZero (P : NN -> Prop)
-  (q : ∀m : NN, (∀ m': NN, (isGTThan m m') -> (P m')) -> P m)
-  : ∀m : NN, P m := by 
-  intro m;
-  -- we need to induct with the extra criteria that 
-  -- (∀ m': NN, (isGTThan m m') -> (P m'))
+--   intro m1;
+--   induction m1 with
+--   | zero => 
+--   have p := q zero;
+--   --rw [nothingLessThanZero m'] at p;
+--   have f : (∀ (m' : NN), isGTThan zero m' → P m') := (fun m: NN => 
+--   (fun p: isGTThan zero m => (False.elim (nothingLessThanZero m p))));
+--   exact p f;
+--   | succ m1 h1 =>
 
 
 
-  intro m1;
-  induction m1 with
+
+-- ======================================================================
+-- ON TO MULTIPLICATION
+
+def leftMult (n : NN) : NN -> NN :=
+  match n with 
+  | zero => fun (_ : NN) => zero
+  | succ n => fun (m : NN) => m + ((leftMult n) m)
+
+instance : Mul NN where
+  mul := leftMult
+
+theorem leftMultZero (n : NN) : leftMult zero n = zero := by rfl;
+theorem leftMultSucc (n m: NN) : leftMult (succ n) m = m + leftMult n m := by rfl;
+
+theorem leftMultZero1 (n : NN) : leftMult n zero = zero := by
+  induction n with
+  | zero => rfl;
+  | succ n h0 => 
+    rw [leftMultSucc]
+    rw [h0]
+    rfl
+
+theorem leftMultSucc1 (n m: NN) : leftMult m (succ n) = m + leftMult m n := by
+  induction m with
   | zero => 
-  have p := q zero;
-  --rw [nothingLessThanZero m'] at p;
-  have f : (∀ (m' : NN), isGTThan zero m' → P m') := (fun m: NN => 
-  (fun p: isGTThan zero m => (False.elim (nothingLessThanZero m p))));
-  exact p f;
-  | succ m1 h1 =>
+    rw [leftMultZero]
+    rw [leftMultZero]
+    rfl;
+  | succ m h0 => 
+    rw [leftMultSucc]
+    rw [h0]
+    rw [leftMultSucc]
+    sorry;
 
 
+theorem leftMultCommutative (n m : NN) : leftMult n m = leftMult m n := by
+  induction n with
+  | zero => rw [leftMultZero1 m]; rfl;
+  | succ n h0 =>
+    rw [leftMultSucc]
+    rw [leftMultSucc1]
+    rw [h0];
+
+#check Or.inl
+
+theorem leftMultZeroDivisors (n m: NN) (p : leftMult n m = zero) :
+  n = zero ∨ m = zero := by
+  cases n with
+  | zero => exact Or.inl rfl;
+  | succ n =>
+    rw [leftMultSucc] at p
+    -- m + something = zero implies m = zero
+    have h1 : m = zero := by sorry;
+    exact Or.inr h1; 
+
+theorem leftMultDistributive (a b c: NN) 
+  : leftMult a (b+c) = (leftMult a b) + (leftMult a c) := by
+  induction a with
+  | zero => 
+    rw [leftMultZero]
+    rw [leftMultZero]
+    rfl
+  | succ a h0 =>
+    rw [leftMultSucc]
+    rw [leftMultSucc]
+    rw [leftMultSucc]
+    rw [h0]
+    sorry -- just addition here
+    
+
+theorem leftMultDistributive1 (a b c: NN) 
+  : leftMult (a + b) c = (leftMult a c) + (leftMult b c) := by
+  induction c with
+  | zero => 
+    rw [leftMultZero1]
+    rw [leftMultZero1]
+    rw [leftMultZero1]
+    rfl
+  | succ c h0 =>
+    rw [leftMultSucc1]
+    rw [leftMultSucc1]
+    rw [leftMultSucc1]
+    rw [h0]
+    sorry -- just addition here
 
 
-
-
-
-   
-  
-
+theorem leftMultAssoc (a b c: NN)
+  : leftMult (leftMult a b) c = leftMult a (leftMult b c) := by
+  induction a with
+  | zero =>
+    rw [leftMultZero]
+    rw [leftMultZero]
+    rw [leftMultZero]
+  | succ a h0 =>
+    rw [leftMultSucc]
+    rw [leftMultSucc]
+    rw [←h0]
+    rw [leftMultDistributive1]
